@@ -1,0 +1,11 @@
+The goal of this project is to create a UCI compatible chess engine with an elo of over 2000 on Lichess.
+This project will go over multiple phases, where phase 1 will only be the barebones functioning bearbot chess engine. It will have minimal UCI compatibility, and will be fairly weak with less than ideal implementation. However, it is ok if phase 1 ends up exceeding expectations.
+
+File/Code Layout:
+uci.cpp
+search.cpp
+board.cpp
+
+flow: UCIHanlder will send current board information off to the board class. The board class will update the board. Then the piece on the board will be calculated to find all legal moves. Next the legal moves will be handed off to the search function. The search function will push and pop moves to the board and find the best move. When the best move is found it will return it to the UCIHandler.
+
+The UCIHandler will parse a string from the Chess GUI that contains the moves. It will store these moves in a vector, and then it will convert the moves into valid board positions in either the UCIHandler or the Board class (idk which one). Next the UCIHandler will push each move to the board. then the ucihandler will ask the board to compute the valid moves. THen the board will send the valid moves to the search function. The search function will push and pop moves to the board to determine which moves gain material, or an advantage. The search function will then send the best move back to the UCIHandler.
