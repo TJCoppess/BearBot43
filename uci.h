@@ -1,5 +1,5 @@
-#ifndef UCI_H
-#define UCI_H
+#ifndef UCI_H_
+#define UCI_H_
 
 #include <string>
 #include <vector>
