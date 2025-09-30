@@ -11,6 +11,12 @@ const int BOARD_COLS = 10;
 
 class Board {
 public:
+	
+	bool whiteKingsideCastle = true;
+	bool whiteQueensideCastle = true;
+	bool blackKingsideCastle = true;
+	bool blackQueensideCastle = true;
+	
     Board();
 
     Piece getPieceAt(int row, int col) const;
@@ -27,6 +33,7 @@ public:
 	std::pair<int, int> getEnPassantTarget() const;
 	std::pair<int, int> findKing(PieceColor kingColor) const;
 	bool isSquareAttacked(int r, int c, PieceColor attackerColor) const;
+	bool isInCheck(PieceColor color) const; // <-- ADD THIS LINE
     // void makeMove(const std::string& move);
     // bool isMoveLegal(...);
 

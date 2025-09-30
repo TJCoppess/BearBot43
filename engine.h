@@ -18,6 +18,6 @@ std::vector<std::string> generatePawnMoves(Board& board, int r, int c);
 
 std::vector<std::string> generatePseudoLegalMoves(Board& board); // Renamed old function
 std::vector<std::string> generateLegalMoves(Board& board);      // New validation function
-std::string search(std::vector<std::string>);
+std::string search(Board& board);
 
 #endif

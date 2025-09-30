@@ -41,6 +41,11 @@ Board::Board() {
     for (int c = 1; c < 9; ++c) {
         squares[9][c] = Piece(backRankOrder[c-1], PieceColor::WHITE);
     }
+    
+    whiteKingsideCastle = true;
+	whiteQueensideCastle = true;
+	blackKingsideCastle = true;
+	blackQueensideCastle = true;
 }
 
 // Gets the piece at a given 0-indexed row and column.
@@ -130,6 +135,51 @@ void Board::pushMove(const std::string& move) {
     int toCol = to.second;
 
     Piece pieceToMove = getPieceAt(fromRow, fromCol);
+    
+        // --- INSERT THE NEW CASTLING RIGHTS LOGIC HERE ---
+
+    // 1. King Move: If a king moves, its castling rights are revoked.
+    if (pieceToMove.getType() == PieceType::KING) {
+        if (pieceToMove.getColor() == PieceColor::WHITE) {
+            whiteKingsideCastle = false;
+            whiteQueensideCastle = false;
+        } else { // It's a black king
+            blackKingsideCastle = false;
+            blackQueensideCastle = false;
+        }
+    }
+
+    // 2. Rook Move: If a rook moves from its home square, revoke that side's rights.
+    if (fromRow == 9 && fromCol == 1) { // White rook from a1
+        whiteQueensideCastle = false;
+    }
+    if (fromRow == 9 && fromCol == 8) { // White rook from h1
+        whiteKingsideCastle = false;
+    }
+    if (fromRow == 2 && fromCol == 1) { // Black rook from a8
+        blackQueensideCastle = false;
+    }
+    if (fromRow == 2 && fromCol == 8) { // Black rook from h8
+        blackKingsideCastle = false;
+    }
+
+    // 3. Rook Capture: If a move lands on a rook's home square, revoke rights.
+    // This handles the case where an enemy rook is captured.
+    if (toRow == 9 && toCol == 1) { // A piece moves to a1
+        whiteQueensideCastle = false;
+    }
+    if (toRow == 9 && toCol == 8) { // A piece moves to h1
+        whiteKingsideCastle = false;
+    }
+    if (toRow == 2 && toCol == 1) { // A piece moves to a8
+        blackQueensideCastle = false;
+    }
+    if (toRow == 2 && toCol == 8) { // A piece moves to h8
+        blackKingsideCastle = false;
+    }
+
+
+    // --- CONTINUE WITH THE REST OF THE pushMove FUNCTION ---
 
 	std::pair<int, int> lastEnPassantTarget = enPassantTargetSquare; // Store old target
 
@@ -187,31 +237,21 @@ void Board::pushMove(const std::string& move) {
         char promotionChar = move[4];
         PieceType promotionType = PieceType::QUEEN; // Default to queen
         switch (promotionChar) {
-            case 'n':
-            case 'N':
-                promotionType = PieceType::KNIGHT;
-                break;
-            case 'b':
-            case 'B':
-                promotionType = PieceType::BISHOP;
-                break;
-            case 'r':
-            case 'R':
-                promotionType = PieceType::ROOK;
-                break;
-            case 'q':
-            case 'Q':
-                promotionType = PieceType::QUEEN;
-                break;
+            case 'n': case 'N': promotionType = PieceType::KNIGHT; break;
+            case 'b': case 'B': promotionType = PieceType::BISHOP; break;
+            case 'r': case 'R': promotionType = PieceType::ROOK;   break;
+            case 'q': case 'Q': promotionType = PieceType::QUEEN;  break;
         }
         Piece promotedPiece(promotionType, pieceToMove.getColor());
         setPieceAt(toRow, toCol, promotedPiece);
         setPieceAt(fromRow, fromCol, EMPTY_PIECE); // Empty the original square
+    } 
+    // This 'else' is not the crucial fix.
+    else {
+        // 3. Handle standard moves
+        setPieceAt(toRow, toCol, pieceToMove);
+        setPieceAt(fromRow, fromCol, EMPTY_PIECE);
     }
-
-    // 3. Handle standard moves
-    setPieceAt(toRow, toCol, pieceToMove);
-    setPieceAt(fromRow, fromCol, EMPTY_PIECE);
     
     moveCount++;
 }
@@ -308,3 +348,17 @@ bool Board::isSquareAttacked(int r, int c, PieceColor attackerColor) const {
     return false; // Square is not attacked
 }
 
+// Checks if a player of the given color is currently in check.
+bool Board::isInCheck(PieceColor color) const {
+    // Find the king of the specified color.
+    std::pair<int, int> kingPos = findKing(color);
+    if (kingPos.first == -1) {
+        return false; // Should not happen in a legal game.
+    }
+
+    // Determine the opponent's color.
+    PieceColor opponentColor = (color == PieceColor::WHITE) ? PieceColor::BLACK : PieceColor::WHITE;
+
+    // Return true if the king's square is attacked by the opponent.
+    return isSquareAttacked(kingPos.first, kingPos.second, opponentColor);
+}

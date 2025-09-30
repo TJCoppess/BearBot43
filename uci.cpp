@@ -81,7 +81,8 @@ int main() {
 				board.setBInc(std::stoi(commandSegments[8]));
 			}
 			
-			std::string bestMove = search(generateLegalMoves(board));
+			// 3. If there are legal moves, find the best one and send it.
+			std::string bestMove = search(board);
 			std::cout << "bestmove " << bestMove << std::endl;
 					
 		} else if (commandSegments[0] == "quit") {

@@ -33,18 +33,59 @@ std::vector<std::string> generateKingMoves(Board &board, int r, int c) {
 
         // Check if the square is on the board
         if (newR >= 2 && newR <= 9 && newC >= 1 && newC <= 8) {
+            Piece targetPiece = board.getPieceAt(newR, newC);
 
-            // 2. Check if the destination square is NOT attacked by the opponent.
-            if (!board.isSquareAttacked(newR, newC, opponentColor)) {
-                Piece targetPiece = board.getPieceAt(newR, newC);
-
-                // 3. Add the move if the square is empty or has an enemy piece.
-                if (targetPiece.getColor() != kingColor) {
-                    moves.push_back(fromSquare + convertCoordsToUci(newR, newC));
-                }
+            // 3. Add the move if the square is empty or has an enemy piece.
+            if (targetPiece.getColor() != kingColor) {
+                moves.push_back(fromSquare + convertCoordsToUci(newR, newC));
             }
         }
     }
+    
+	// --- ADD THIS BLOCK TO generateKingMoves ---
+	
+	// 3. Castling (must not be in check)
+	// Assuming white king at row 9, col 5 (e1); black at row 2, col 5 (e8)
+	if (!board.isSquareAttacked(r, c, opponentColor)) {
+	    // White King Castling
+	    if (kingColor == PieceColor::WHITE && r == 9 && c == 5) {
+	        // Kingside (e1g1)
+	        if (board.whiteKingsideCastle &&
+	            board.getPieceAt(9, 6).getType() == PieceType::EMPTY &&  // f1 empty
+	            board.getPieceAt(9, 7).getType() == PieceType::EMPTY &&  // g1 empty
+	            !board.isSquareAttacked(9, 6, opponentColor)) {          // f1 not attacked
+	            moves.push_back("e1g1");
+	        }
+	        // Queenside (e1c1)
+	        if (board.whiteQueensideCastle &&
+	            board.getPieceAt(9, 4).getType() == PieceType::EMPTY &&  // d1 empty
+	            board.getPieceAt(9, 3).getType() == PieceType::EMPTY &&  // c1 empty
+	            board.getPieceAt(9, 2).getType() == PieceType::EMPTY &&  // b1 empty
+	            !board.isSquareAttacked(9, 4, opponentColor) &&          // d1 not attacked
+	            !board.isSquareAttacked(9, 3, opponentColor)) {          // c1 not attacked
+	            moves.push_back("e1c1");
+	        }
+	    }
+	    // Black King Castling
+	    else if (kingColor == PieceColor::BLACK && r == 2 && c == 5) {
+	        // Kingside (e8g8)
+	        if (board.blackKingsideCastle &&
+	            board.getPieceAt(2, 6).getType() == PieceType::EMPTY &&  // f8 empty
+	            board.getPieceAt(2, 7).getType() == PieceType::EMPTY &&  // g8 empty
+	            !board.isSquareAttacked(2, 6, opponentColor)) {          // f8 not attacked
+	            moves.push_back("e8g8");
+	        }
+	        // Queenside (e8c8)
+	        if (board.blackQueensideCastle &&
+	            board.getPieceAt(2, 4).getType() == PieceType::EMPTY &&  // d8 empty
+	            board.getPieceAt(2, 3).getType() == PieceType::EMPTY &&  // c8 empty
+	            board.getPieceAt(2, 2).getType() == PieceType::EMPTY &&  // b8 empty
+	            !board.isSquareAttacked(2, 4, opponentColor) &&          // d8 not attacked
+	            !board.isSquareAttacked(2, 3, opponentColor)) {          // c8 not attacked
+	            moves.push_back("e8c8");
+	        }
+	    }
+	}
 
     return moves;
 }
@@ -334,9 +375,32 @@ std::vector<std::string> generateLegalMoves(Board& board) {
     return legalMoves;
 }
 
-std::string search(std::vector<std::string> moves) {
+std::string search(Board& board) {
+	
+	std::vector<std::string> moves = generateLegalMoves(board);
+//	if (depth == 0) {
+//		return;
+//	}
+//	else {
+//		for (std::string move : moves) {
+//			
+//		}
+//	}
+//	
+//
+//	int depth = 1;
     if (moves.empty()) {
         return ""; // Return an empty string or handle no-moves case
     }
+//    else {
+//    	for () {
+//    			
+//		}
+//		loop through all moves and check to see if they loose or gain material,
+//		and then go deeper up to a depth of x. add the gain or loss of each
+//		depth to get a total score if that position is good or not. 
+//		Assume that each player always picks the best move
+//		
+//	}
 	return moves[rand() % moves.size()];
 }
