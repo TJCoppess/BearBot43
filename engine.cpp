@@ -375,6 +375,74 @@ std::vector<std::string> generateLegalMoves(Board& board) {
     return legalMoves;
 }
 
+double evaluatePositon(Board& board) {
+	for (int row = 2; row < BOARD_ROWS - 2; ++row) {
+		for (int col = 1; col < BOARD_COLS - 1; ++col) {
+//			std::vector<std::string> generatePseudoLegalMoves(Board& board) { // Pass board by reference
+//			std::vector<std::string> generatedMoves;
+//			PieceColor currentPlayer = board.getCurrentPlayer();
+//			Piece currentPiece = board.getPieceAt(r, c);
+//			if (currentPiece.getColor() == currentPlayer) {
+//				switch (currentPiece.getType()) {
+//					case PieceType::KING: {
+//						std::vector<std::string> kingMoves = generateKingMoves(board, r, c);
+//						generatedMoves.insert(generatedMoves.end(), kingMoves.begin(), kingMoves.end());
+//						break;
+//					}
+//					case PieceType::QUEEN: {
+//						std::vector<std::string> queenMoves = generateQueenMoves(board, r, c);
+//						generatedMoves.insert(generatedMoves.end(), queenMoves.begin(), queenMoves.end());
+//						break;
+//					}
+//					case PieceType::BISHOP: {
+//						std::vector<std::string> bishopMoves = generateBishopMoves(board, r, c);
+//						generatedMoves.insert(generatedMoves.end(), bishopMoves.begin(), bishopMoves.end());
+//						break;
+//					}
+//					case PieceType::KNIGHT: {
+//						std::vector<std::string> knightMoves = generateKnightMoves(board, r, c);
+//						generatedMoves.insert(generatedMoves.end(), knightMoves.begin(), knightMoves.end());
+//						break;
+//					}
+//					case PieceType::ROOK: {
+//						std::vector<std::string> rookMoves = generateRookMoves(board, r, c);
+//						generatedMoves.insert(generatedMoves.end(), rookMoves.begin(), rookMoves.end());
+//						break;
+//					}
+//					case PieceType::PAWN: {
+//						std::vector<std::string> pawnMoves = generatePawnMoves(board, r, c);
+//						generatedMoves.insert(generatedMoves.end(), pawnMoves.begin(), pawnMoves.end());
+//						break;
+//					}
+//					default:
+//						break;
+//				}
+//			}
+		}
+	}
+}
+        
+double minimax(Board& board, int node, int depth, bool maximizingPlayer) {
+	double value;
+	if (depth == 0 || isGameOver()) {
+		return evaluatePosition(board);
+	}
+	if (maximizingPlayer) {
+		value = std::numeric_limits<int>::min();
+		for (int child : node) {
+			value = max(value, minimax(child, depth - 1, FALSE));
+		}
+		return value;
+	}
+	else {
+		value = std::numeric_limits<int>::max();
+		for (int child : node) {
+			value = min(value, minimax(child, depth - 1, TRUE));
+		}
+		return value;
+	}
+}
+
 std::string search(Board& board) {
 	
 	std::vector<std::string> moves = generateLegalMoves(board);
