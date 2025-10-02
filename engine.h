@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <cstdlib>
+#include <limits>
 #include "board.h"
 
 std::string convertCoordsToUci(int, int);
@@ -18,6 +19,10 @@ std::vector<std::string> generatePawnMoves(Board& board, int r, int c);
 
 std::vector<std::string> generatePseudoLegalMoves(Board& board); // Renamed old function
 std::vector<std::string> generateLegalMoves(Board& board);      // New validation function
+
+int evaluatePosition(Board& board);
+double minimax(Board& board, int depth, bool maximizingPlayer);
+
 std::string search(Board& board);
 
 #endif

@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <cstdlib>
+#include <limits>
 #include "engine.h"
 #include "board.h"
 
@@ -375,100 +376,147 @@ std::vector<std::string> generateLegalMoves(Board& board) {
     return legalMoves;
 }
 
-double evaluatePositon(Board& board) {
+int evaluatePosition(Board& board) {
+	double evalScore = 0;
 	for (int row = 2; row < BOARD_ROWS - 2; ++row) {
 		for (int col = 1; col < BOARD_COLS - 1; ++col) {
-//			std::vector<std::string> generatePseudoLegalMoves(Board& board) { // Pass board by reference
-//			std::vector<std::string> generatedMoves;
-//			PieceColor currentPlayer = board.getCurrentPlayer();
-//			Piece currentPiece = board.getPieceAt(r, c);
-//			if (currentPiece.getColor() == currentPlayer) {
-//				switch (currentPiece.getType()) {
-//					case PieceType::KING: {
-//						std::vector<std::string> kingMoves = generateKingMoves(board, r, c);
-//						generatedMoves.insert(generatedMoves.end(), kingMoves.begin(), kingMoves.end());
-//						break;
-//					}
-//					case PieceType::QUEEN: {
-//						std::vector<std::string> queenMoves = generateQueenMoves(board, r, c);
-//						generatedMoves.insert(generatedMoves.end(), queenMoves.begin(), queenMoves.end());
-//						break;
-//					}
-//					case PieceType::BISHOP: {
-//						std::vector<std::string> bishopMoves = generateBishopMoves(board, r, c);
-//						generatedMoves.insert(generatedMoves.end(), bishopMoves.begin(), bishopMoves.end());
-//						break;
-//					}
-//					case PieceType::KNIGHT: {
-//						std::vector<std::string> knightMoves = generateKnightMoves(board, r, c);
-//						generatedMoves.insert(generatedMoves.end(), knightMoves.begin(), knightMoves.end());
-//						break;
-//					}
-//					case PieceType::ROOK: {
-//						std::vector<std::string> rookMoves = generateRookMoves(board, r, c);
-//						generatedMoves.insert(generatedMoves.end(), rookMoves.begin(), rookMoves.end());
-//						break;
-//					}
-//					case PieceType::PAWN: {
-//						std::vector<std::string> pawnMoves = generatePawnMoves(board, r, c);
-//						generatedMoves.insert(generatedMoves.end(), pawnMoves.begin(), pawnMoves.end());
-//						break;
-//					}
-//					default:
-//						break;
-//				}
-//			}
+			Piece currentPiece = board.getPieceAt(row, col);
+			if (currentPiece.getColor() == PieceColor::WHITE) {
+				switch (currentPiece.getType()) {
+					case PieceType::KING: {
+						evalScore += 99999;
+						break;
+					}
+					case PieceType::QUEEN: {
+						evalScore += 900;
+						break;
+					}
+					case PieceType::BISHOP: {
+						evalScore += 320;
+						break;
+					}
+					case PieceType::KNIGHT: {
+						evalScore += 310;
+						break;
+					}
+					case PieceType::ROOK: {
+						evalScore += 500;
+						break;
+					}
+					case PieceType::PAWN: {
+						evalScore += 100;
+						break;
+					}
+					default:
+						break;
+				}
+			}
+			else {
+				switch (currentPiece.getType()) {
+					case PieceType::KING: {
+						evalScore -= 99999;
+						break;
+					}
+					case PieceType::QUEEN: {
+						evalScore -= 900;
+						break;
+					}
+					case PieceType::BISHOP: {
+						evalScore -= 320;
+						break;
+					}
+					case PieceType::KNIGHT: {
+						evalScore -= 310;
+						break;
+					}
+					case PieceType::ROOK: {
+						evalScore -= 500;
+						break;
+					}
+					case PieceType::PAWN: {
+						evalScore -= 100;
+						break;
+					}
+					default:
+						break;
+				}
+			}
 		}
 	}
+	return evalScore;
 }
         
-double minimax(Board& board, int node, int depth, bool maximizingPlayer) {
+double minimax(Board& board, int depth, bool maximizingPlayer) {
 	double value;
-	if (depth == 0 || isGameOver()) {
+	Board testBoard;
+	std::vector<std::string> moves = generateLegalMoves(board);
+	if (depth == 0 /* || isGameOver()*/) {
 		return evaluatePosition(board);
 	}
 	if (maximizingPlayer) {
 		value = std::numeric_limits<int>::min();
-		for (int child : node) {
-			value = max(value, minimax(child, depth - 1, FALSE));
+		for (std::string move : moves) {
+			testBoard = board;
+			testBoard.pushMove(move);
+			value = std::max(value, minimax(testBoard, depth - 1, false));
 		}
 		return value;
 	}
 	else {
 		value = std::numeric_limits<int>::max();
-		for (int child : node) {
-			value = min(value, minimax(child, depth - 1, TRUE));
+		for (std::string move : moves) {
+			testBoard = board;
+			testBoard.pushMove(move);
+			value = std::min(value, minimax(testBoard, depth - 1, true));
 		}
 		return value;
 	}
 }
 
 std::string search(Board& board) {
-	
 	std::vector<std::string> moves = generateLegalMoves(board);
-//	if (depth == 0) {
-//		return;
-//	}
-//	else {
-//		for (std::string move : moves) {
-//			
-//		}
-//	}
-//	
-//
-//	int depth = 1;
-    if (moves.empty()) {
+	if (moves.empty()) {
         return ""; // Return an empty string or handle no-moves case
     }
-//    else {
-//    	for () {
-//    			
-//		}
-//		loop through all moves and check to see if they loose or gain material,
-//		and then go deeper up to a depth of x. add the gain or loss of each
-//		depth to get a total score if that position is good or not. 
-//		Assume that each player always picks the best move
-//		
-//	}
+	int depth = 4;
+	bool maximizingPlayer = board.getCurrentPlayer() == PieceColor::WHITE;
+	double bestmoveScore;
+	std::string bestmove = moves[0];
+	
+	PieceColor currentPlayer = board.getCurrentPlayer();
+	
+    if (currentPlayer == PieceColor::WHITE) {
+        bestmoveScore = -std::numeric_limits<double>::infinity(); // White wants the highest score
+    }
+	else {
+        bestmoveScore = std::numeric_limits<double>::infinity(); // Black wants the lowest score
+    }
+	
+	for (std::string move : moves) {
+		
+		// 2. Simulate the move on a temporary board
+        Board boardCopy = board;
+        boardCopy.pushMove(move);
+
+        // 3. Call minimax ONCE on the new board state and store the score
+        // The 'isMaximizingPlayer' is the OPPOSITE of the current player, as it's for the next turn
+        bool isMaximizingPlayerAfterMove = (boardCopy.getCurrentPlayer() == PieceColor::WHITE);
+        double eval = minimax(boardCopy, depth - 1, isMaximizingPlayerAfterMove);
+		
+		if (currentPlayer == PieceColor::WHITE) {
+			if (eval > bestmoveScore) {
+				bestmoveScore = eval;
+				bestmove = move;
+			}
+		}
+		else {
+			if (eval < bestmoveScore) {
+				bestmoveScore = eval;
+				bestmove = move;
+			}
+		}
+	}
+	std::cout << "Evaluation Score: " << evaluatePosition(board) << std::endl;
+	// return bestmove;
 	return moves[rand() % moves.size()];
 }
