@@ -18,7 +18,7 @@ std::vector<std::string> parseCommand(std::string command) {
 }
 
 int main() {
-	srand(time(NULL));
+	srand(static_cast<unsigned int>(time(NULL))); // Add the static_cast
 	bool isRunning = true;
 	Board board;
 	while (isRunning) {

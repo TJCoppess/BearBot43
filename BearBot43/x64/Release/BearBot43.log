@@ -1,0 +1,7 @@
+﻿  board.cpp
+  engine.cpp
+  piece.cpp
+  uci.cpp
+  Generating Code...
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:ICF' specification
+  BearBot43.vcxproj -> C:\Users\rover\OneDrive\Documents\GitHub\BearBot43\x64\Release\BearBot43.exe

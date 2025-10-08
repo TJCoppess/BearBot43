@@ -8,6 +8,7 @@
 #include <thread>
 #include <atomic>
 #include <functional>
+#include <chrono>
 
 #include "engine.h"
 #include "board.h"
@@ -361,7 +362,6 @@ std::vector<std::string> generatePseudoLegalMoves(Board& board) { // Pass board 
 }
 
 // This function filters the pseudo-legal moves to produce only fully legal moves.
-// In engine.cpp
 std::vector<std::string> generateLegalMoves(Board& board) {
     std::vector<std::string> legalMoves;
     std::vector<std::string> pseudoLegalMoves = generatePseudoLegalMoves(board);
@@ -377,7 +377,7 @@ std::vector<std::string> generateLegalMoves(Board& board) {
     return legalMoves;
 }
 
-int evaluatePosition(Board& board) {
+double evaluatePosition(Board& board) {
 	double evalScore = 0;
 	for (int row = 2; row < BOARD_ROWS - 2; ++row) {
 		for (int col = 1; col < BOARD_COLS - 1; ++col) {
@@ -475,9 +475,6 @@ double minimax(Board& board, int depth, bool maximizingPlayer) {
 }
 
 // Add this to engine.cpp (replace the existing Perft function)
-
-// In engine.cpp
-
 // 1. Your original Perft function, renamed to be the recursive helper
 uint64_t Perft_recursive(Board& board, int depth) {
     if (depth == 0)
