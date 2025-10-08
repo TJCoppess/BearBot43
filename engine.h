@@ -11,6 +11,7 @@
 #include <thread>
 #include <atomic>
 #include <functional>
+#include <chrono>
 #include "board.h"
 
 std::string convertCoordsToUci(int, int);
@@ -25,7 +26,7 @@ std::vector<std::string> generatePawnMoves(Board& board, int r, int c);
 std::vector<std::string> generatePseudoLegalMoves(Board& board); // Renamed old function
 std::vector<std::string> generateLegalMoves(Board& board);      // New validation function
 
-int evaluatePosition(Board& board);
+double evaluatePosition(Board& board);
 double minimax(Board& board, int depth, bool maximizingPlayer);
 uint64_t Perft_recursive(Board& board, int depth);
 uint64_t Perft_parallel(Board& board, int depth);

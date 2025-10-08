@@ -9,6 +9,10 @@ const Piece EMPTY_PIECE(PieceType::EMPTY, PieceColor::NONE);
 Board::Board() {
 	moveCount = 0;
 	enPassantTargetSquare = {-1, -1};
+    wtime = 0;
+    btime = 0;
+    winc = 0;
+    binc = 0;
 	
     for (int r = 0; r < BOARD_ROWS; ++r) {
         for (int c = 0; c < BOARD_COLS; ++c) {
@@ -112,7 +116,7 @@ void Board::setBInc(int BInc) {
 	this->binc = BInc;
 }
 
-std::pair<int, int> Board::convertUciToCoords(const std::string& uciSquare) {
+std::pair<int, int> Board::convertUciToCoords(const std::string& uciSquare) const {
     if (uciSquare.length() < 2) {
         return {-1, -1}; // Invalid input
     }

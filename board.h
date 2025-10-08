@@ -10,12 +10,12 @@ const int BOARD_ROWS = 12;
 const int BOARD_COLS = 10;
 
 struct BoardState {
-    Piece capturedPiece;
-    std::pair<int, int> enPassantTargetSquare;
-    bool whiteKingsideCastle;
-    bool whiteQueensideCastle;
-    bool blackKingsideCastle;
-    bool blackQueensideCastle;
+    Piece capturedPiece = Piece(); // Default constructs an empty piece
+    std::pair<int, int> enPassantTargetSquare = { -1, -1 };
+    bool whiteKingsideCastle = false;
+    bool whiteQueensideCastle = false;
+    bool blackKingsideCastle = false;
+    bool blackQueensideCastle = false;
 };
 
 class Board {
@@ -35,7 +35,7 @@ public:
 	void setBTime(int BTime);
 	void setWInc(int WInc);
 	void setBInc(int BInc);
-	std::pair<int, int> convertUciToCoords(const std::string& uciSquare);
+    std::pair<int, int> convertUciToCoords(const std::string& uciSquare) const;
 	void pushMove(const std::string& move);
 	void popMove(const std::string& move);
 	void initializeBoard();
@@ -57,8 +57,6 @@ private:
     int btime; // Black's remaining time in milliseconds
     int winc;  // White's increment in milliseconds
     int binc;  // Black's increment in milliseconds
-    
-    void setupRank(int row, PieceColor color, const std::vector<PieceType>& pieceOrder);
 };
 
 #endif
