@@ -6,6 +6,11 @@
 #include <string>
 #include <cstdlib>
 #include <limits>
+#include <ctime>
+#include <cstdint>
+#include <thread>
+#include <atomic>
+#include <functional>
 #include "board.h"
 
 std::string convertCoordsToUci(int, int);
@@ -22,6 +27,9 @@ std::vector<std::string> generateLegalMoves(Board& board);      // New validatio
 
 int evaluatePosition(Board& board);
 double minimax(Board& board, int depth, bool maximizingPlayer);
+uint64_t Perft_recursive(Board& board, int depth);
+uint64_t Perft_parallel(Board& board, int depth);
+void PerftTest(Board& board, int depth);
 
 std::string search(Board& board);
 

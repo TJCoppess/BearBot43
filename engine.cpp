@@ -3,6 +3,12 @@
 #include <string>
 #include <cstdlib>
 #include <limits>
+#include <ctime>
+#include <cstdint>
+#include <thread>
+#include <atomic>
+#include <functional>
+
 #include "engine.h"
 #include "board.h"
 
@@ -355,23 +361,18 @@ std::vector<std::string> generatePseudoLegalMoves(Board& board) { // Pass board 
 }
 
 // This function filters the pseudo-legal moves to produce only fully legal moves.
+// In engine.cpp
 std::vector<std::string> generateLegalMoves(Board& board) {
     std::vector<std::string> legalMoves;
     std::vector<std::string> pseudoLegalMoves = generatePseudoLegalMoves(board);
     PieceColor currentPlayer = board.getCurrentPlayer();
-    PieceColor opponentColor = (currentPlayer == PieceColor::WHITE) ? PieceColor::BLACK : PieceColor::WHITE;
 
     for (const std::string& move : pseudoLegalMoves) {
-        Board boardCopy = board; // Create a temporary copy of the board
-        boardCopy.pushMove(move);   // Make the move on the copy
-
-        // Find the king on the board *after* the move
-        std::pair<int, int> kingPos = boardCopy.findKing(currentPlayer);
-        
-        // If the king is not in check after the move, it's a legal move
-        if (!boardCopy.isSquareAttacked(kingPos.first, kingPos.second, opponentColor)) {
+        board.pushMove(move);
+        if (!board.isInCheck(currentPlayer)) {
             legalMoves.push_back(move);
         }
+        board.popMove(move);
     }
     return legalMoves;
 }
@@ -473,50 +474,118 @@ double minimax(Board& board, int depth, bool maximizingPlayer) {
 	}
 }
 
+// Add this to engine.cpp (replace the existing Perft function)
+
+// In engine.cpp
+
+// 1. Your original Perft function, renamed to be the recursive helper
+uint64_t Perft_recursive(Board& board, int depth) {
+    if (depth == 0)
+        return 1ULL;
+
+    std::vector<std::string> moves = generateLegalMoves(board);
+    uint64_t nodes = 0;
+
+    for (const std::string& move : moves) {
+        board.pushMove(move);
+        nodes += Perft_recursive(board, depth - 1);
+        board.popMove(move);
+    }
+
+    return nodes;
+}
+
+// 2. The new top-level function that splits the work among threads
+uint64_t Perft_parallel(Board& board, int depth) {
+    if (depth == 0) return 1;
+    if (depth == 1) return generateLegalMoves(board).size();
+
+    std::vector<std::string> moves = generateLegalMoves(board);
+    std::atomic<uint64_t> totalNodes(0);
+    std::vector<std::thread> threads;
+
+    // Create a thread for each move from the root
+    for (const std::string& move : moves) {
+        // We need a copy of the board for each thread to work on
+        Board threadBoard = board;
+
+        threads.emplace_back([move, threadBoard, depth, &totalNodes]() mutable {
+            threadBoard.pushMove(move);
+            uint64_t result = Perft_recursive(threadBoard, depth - 1);
+            totalNodes += result;
+        });
+    }
+
+    // Wait for all threads to finish their work
+    for (auto& t : threads) {
+        t.join();
+    }
+
+    return totalNodes;
+}
+
+
+// 3. The updated test function that calls our new parallel function
+void PerftTest(Board& board, int depth) {
+    std::cout << "Perft depth " << depth << std::endl;
+
+    auto start = std::chrono::high_resolution_clock::now();
+    uint64_t totalNodes = Perft_parallel(board, depth); // Call the parallel version
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> elapsed = end - start;
+    double nps = (elapsed.count() > 0) ? totalNodes / elapsed.count() : 0;
+
+    std::cout << "Nodes: " << totalNodes << std::endl;
+    std::cout << "Time: " << elapsed.count() << " seconds" << std::endl;
+    std::cout << "NPS (Nodes Per Second): " << static_cast<uint64_t>(nps) << std::endl;
+    std::cout << "-------------------" << std::endl;
+}
+
 std::string search(Board& board) {
 	std::vector<std::string> moves = generateLegalMoves(board);
-	if (moves.empty()) {
-        return ""; // Return an empty string or handle no-moves case
-    }
-	int depth = 4;
-	bool maximizingPlayer = board.getCurrentPlayer() == PieceColor::WHITE;
-	double bestmoveScore;
-	std::string bestmove = moves[0];
-	
-	PieceColor currentPlayer = board.getCurrentPlayer();
-	
-    if (currentPlayer == PieceColor::WHITE) {
-        bestmoveScore = -std::numeric_limits<double>::infinity(); // White wants the highest score
-    }
-	else {
-        bestmoveScore = std::numeric_limits<double>::infinity(); // Black wants the lowest score
-    }
-	
-	for (std::string move : moves) {
-		
-		// 2. Simulate the move on a temporary board
-        Board boardCopy = board;
-        boardCopy.pushMove(move);
-
-        // 3. Call minimax ONCE on the new board state and store the score
-        // The 'isMaximizingPlayer' is the OPPOSITE of the current player, as it's for the next turn
-        bool isMaximizingPlayerAfterMove = (boardCopy.getCurrentPlayer() == PieceColor::WHITE);
-        double eval = minimax(boardCopy, depth - 1, isMaximizingPlayerAfterMove);
-		
-		if (currentPlayer == PieceColor::WHITE) {
-			if (eval > bestmoveScore) {
-				bestmoveScore = eval;
-				bestmove = move;
-			}
-		}
-		else {
-			if (eval < bestmoveScore) {
-				bestmoveScore = eval;
-				bestmove = move;
-			}
-		}
-	}
-	std::cout << "Evaluation Score: " << evaluatePosition(board) << std::endl;
-	// return bestmove;
+//	if (moves.empty()) {
+//        return ""; // Return an empty string or handle no-moves case
+//    }
+//	int depth = 1;
+//	bool maximizingPlayer = board.getCurrentPlayer() == PieceColor::WHITE;
+//	double bestmoveScore;
+//	std::string bestmove = moves[0];
+//	
+//	PieceColor currentPlayer = board.getCurrentPlayer();
+//	
+//    if (currentPlayer == PieceColor::WHITE) {
+//        bestmoveScore = -std::numeric_limits<double>::infinity(); // White wants the highest score
+//    }
+//	else {
+//        bestmoveScore = std::numeric_limits<double>::infinity(); // Black wants the lowest score
+//    }
+//	
+//	for (std::string move : moves) {
+//		
+//		// 2. Simulate the move on a temporary board
+//        Board boardCopy = board;
+//        boardCopy.pushMove(move);
+//
+//        // 3. Call minimax ONCE on the new board state and store the score
+//        // The 'isMaximizingPlayer' is the OPPOSITE of the current player, as it's for the next turn
+//        bool isMaximizingPlayerAfterMove = (boardCopy.getCurrentPlayer() == PieceColor::WHITE);
+//        double eval = minimax(boardCopy, depth - 1, isMaximizingPlayerAfterMove);
+//		
+//		if (currentPlayer == PieceColor::WHITE) {
+//			if (eval > bestmoveScore) {
+//				bestmoveScore = eval;
+//				bestmove = move;
+//			}
+//		}
+//		else {
+//			if (eval < bestmoveScore) {
+//				bestmoveScore = eval;
+//				bestmove = move;
+//			}
+//		}
+//	}
+//	std::cout << "Evaluation Score: " << evaluatePosition(board) << std::endl;
+//	// return bestmove;
 	return moves[rand() % moves.size()];
 }

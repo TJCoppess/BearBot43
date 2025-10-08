@@ -89,6 +89,13 @@ int main() {
 			isRunning = false;
 		} else if (commandSegments[0] == "print") {
 			board.printBoard();
+		} else if (commandSegments[0] == "perft") {
+		    if (commandSegments.size() > 1) {
+		        int depth = std::stoi(commandSegments[1]);
+		        PerftTest(board, depth);
+		    } else {
+		        std::cout << "Usage: perft <depth>" << std::endl;
+		    }
 		} else {
 			std::cout << "I don't know that command yet: " << command << std::endl;
 		}

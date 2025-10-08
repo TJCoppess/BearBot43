@@ -123,10 +123,19 @@ std::pair<int, int> Board::convertUciToCoords(const std::string& uciSquare) {
     return {row, col};
 }
 
+// In board.cpp
 void Board::pushMove(const std::string& move) {
-	if (move.length() < 4) return; // Invalid move string
+    if (move.length() < 4) return;
 
-    // 1. Convert UCI notation to board coordinates
+    // --- Checkpoint A ---
+    BoardState currentState;
+    currentState.enPassantTargetSquare = this->enPassantTargetSquare;
+    currentState.whiteKingsideCastle = this->whiteKingsideCastle;
+    currentState.whiteQueensideCastle = this->whiteQueensideCastle;
+    currentState.blackKingsideCastle = this->blackKingsideCastle;
+    currentState.blackQueensideCastle = this->blackQueensideCastle;
+
+    // --- Checkpoint B ---
     std::pair<int, int> from = convertUciToCoords(move.substr(0, 2));
     std::pair<int, int> to = convertUciToCoords(move.substr(2, 2));
     int fromRow = from.first;
@@ -134,126 +143,127 @@ void Board::pushMove(const std::string& move) {
     int toRow = to.first;
     int toCol = to.second;
 
+    // --- Checkpoint C ---
     Piece pieceToMove = getPieceAt(fromRow, fromCol);
-    
-        // --- INSERT THE NEW CASTLING RIGHTS LOGIC HERE ---
-
-    // 1. King Move: If a king moves, its castling rights are revoked.
-    if (pieceToMove.getType() == PieceType::KING) {
-        if (pieceToMove.getColor() == PieceColor::WHITE) {
-            whiteKingsideCastle = false;
-            whiteQueensideCastle = false;
-        } else { // It's a black king
-            blackKingsideCastle = false;
-            blackQueensideCastle = false;
-        }
-    }
-
-    // 2. Rook Move: If a rook moves from its home square, revoke that side's rights.
-    if (fromRow == 9 && fromCol == 1) { // White rook from a1
-        whiteQueensideCastle = false;
-    }
-    if (fromRow == 9 && fromCol == 8) { // White rook from h1
-        whiteKingsideCastle = false;
-    }
-    if (fromRow == 2 && fromCol == 1) { // Black rook from a8
-        blackQueensideCastle = false;
-    }
-    if (fromRow == 2 && fromCol == 8) { // Black rook from h8
-        blackKingsideCastle = false;
-    }
-
-    // 3. Rook Capture: If a move lands on a rook's home square, revoke rights.
-    // This handles the case where an enemy rook is captured.
-    if (toRow == 9 && toCol == 1) { // A piece moves to a1
-        whiteQueensideCastle = false;
-    }
-    if (toRow == 9 && toCol == 8) { // A piece moves to h1
-        whiteKingsideCastle = false;
-    }
-    if (toRow == 2 && toCol == 1) { // A piece moves to a8
-        blackQueensideCastle = false;
-    }
-    if (toRow == 2 && toCol == 8) { // A piece moves to h8
-        blackKingsideCastle = false;
-    }
-
-
-    // --- CONTINUE WITH THE REST OF THE pushMove FUNCTION ---
-
-	std::pair<int, int> lastEnPassantTarget = enPassantTargetSquare; // Store old target
-
-    // 1. First, reset the en passant square. It's only valid for one turn.
+    Piece capturedPiece = getPieceAt(toRow, toCol);
     enPassantTargetSquare = {-1, -1};
-    // 2. Check if this move is a pawn double push, which creates a new en passant opportunity.
-    if (pieceToMove.getType() == PieceType::PAWN && abs(fromRow - toRow) == 2) {
-        enPassantTargetSquare = {(fromRow + toRow) / 2, fromCol};
-    }
 
+    // --- Checkpoint D ---
     if (pieceToMove.getType() == PieceType::PAWN) {
-        // Check if the move is a diagonal pawn move to an empty square
-        // and that square was the valid en passant target from the previous turn.
-        if (fromCol != toCol && getPieceAt(toRow, toCol).getType() == PieceType::EMPTY) {
-            if (toRow == lastEnPassantTarget.first && toCol == lastEnPassantTarget.second) {
-                // This is an en passant capture. Remove the captured pawn.
-                // The captured pawn is on the same row as the moving pawn, but in the destination column.
-                int capturedPawnRow = fromRow;
-                int capturedPawnCol = toCol;
-                setPieceAt(capturedPawnRow, capturedPawnCol, EMPTY_PIECE); // Remove the ghost pawn
-            }
+        if (abs(fromRow - toRow) == 2) {
+            enPassantTargetSquare = {(fromRow + toRow) / 2, fromCol};
+        } else if (fromCol != toCol && capturedPiece.getType() == PieceType::EMPTY) {
+            int capturedPawnRow = fromRow;
+            int capturedPawnCol = toCol;
+            capturedPiece = getPieceAt(capturedPawnRow, capturedPawnCol); 
+            setPieceAt(capturedPawnRow, capturedPawnCol, EMPTY_PIECE);
         }
     }
+    
+    // --- Checkpoint E ---
+    currentState.capturedPiece = capturedPiece;
+    history.push_back(currentState);
 
-    // 2. Handle special moves
-    // Castling: represented by the king's two-square move
+    // --- Checkpoint F ---
     if (pieceToMove.getType() == PieceType::KING) {
-        int colDiff = fromCol - toCol;
-        if (abs(colDiff) == 2) { // Castling move
-            // White Kingside ("e1g1")
-            if (fromRow == 9 && fromCol == 5 && toCol == 7) {
-                setPieceAt(9, 6, getPieceAt(9, 8)); // Move rook
-                setPieceAt(9, 8, EMPTY_PIECE);
-            }
-            // White Queenside ("e1c1")
-            else if (fromRow == 9 && fromCol == 5 && toCol == 3) {
-                setPieceAt(9, 4, getPieceAt(9, 1)); // Move rook
-                setPieceAt(9, 1, EMPTY_PIECE);
-            }
-            // Black Kingside ("e8g8")
-            else if (fromRow == 2 && fromCol == 5 && toCol == 7) {
-                setPieceAt(2, 6, getPieceAt(2, 8)); // Move rook
-                setPieceAt(2, 8, EMPTY_PIECE);
-            }
-            // Black Queenside ("e8c8")
-            else if (fromRow == 2 && fromCol == 5 && toCol == 3) {
-                setPieceAt(2, 4, getPieceAt(2, 1)); // Move rook
-                setPieceAt(2, 1, EMPTY_PIECE);
-            }
-        }
+        if (pieceToMove.getColor() == PieceColor::WHITE) { whiteKingsideCastle = false; whiteQueensideCastle = false; }
+        else { blackKingsideCastle = false; blackQueensideCastle = false; }
     }
+    if ((fromRow == 9 && fromCol == 1) || (toRow == 9 && toCol == 1)) whiteQueensideCastle = false;
+    if ((fromRow == 9 && fromCol == 8) || (toRow == 9 && toCol == 8)) whiteKingsideCastle = false;
+    if ((fromRow == 2 && fromCol == 1) || (toRow == 2 && toCol == 1)) blackQueensideCastle = false;
+    if ((fromRow == 2 && fromCol == 8) || (toRow == 2 && toCol == 8)) blackKingsideCastle = false;
 
-    // Pawn Promotion: identified by a 5th character
+    // --- Checkpoint G ---
+    setPieceAt(toRow, toCol, pieceToMove);
+    setPieceAt(fromRow, fromCol, EMPTY_PIECE);
+
+    // --- Checkpoint H ---
+    if (pieceToMove.getType() == PieceType::KING && abs(fromCol - toCol) == 2) {
+        if (toCol == 7) { setPieceAt(fromRow, 6, getPieceAt(fromRow, 8)); setPieceAt(fromRow, 8, EMPTY_PIECE); } 
+        else { setPieceAt(fromRow, 4, getPieceAt(fromRow, 1)); setPieceAt(fromRow, 1, EMPTY_PIECE); }
+    }
     if (move.length() == 5) {
         char promotionChar = move[4];
-        PieceType promotionType = PieceType::QUEEN; // Default to queen
+        PieceType promotionType = PieceType::QUEEN;
         switch (promotionChar) {
             case 'n': case 'N': promotionType = PieceType::KNIGHT; break;
             case 'b': case 'B': promotionType = PieceType::BISHOP; break;
             case 'r': case 'R': promotionType = PieceType::ROOK;   break;
-            case 'q': case 'Q': promotionType = PieceType::QUEEN;  break;
         }
-        Piece promotedPiece(promotionType, pieceToMove.getColor());
-        setPieceAt(toRow, toCol, promotedPiece);
-        setPieceAt(fromRow, fromCol, EMPTY_PIECE); // Empty the original square
-    } 
-    // This 'else' is not the crucial fix.
-    else {
-        // 3. Handle standard moves
-        setPieceAt(toRow, toCol, pieceToMove);
-        setPieceAt(fromRow, fromCol, EMPTY_PIECE);
+        setPieceAt(toRow, toCol, Piece(promotionType, pieceToMove.getColor()));
     }
-    
+
     moveCount++;
+}
+
+void Board::popMove(const std::string& move) {
+    if (history.empty()) {
+        return; // Safety check
+    }
+
+    // 1. Get the last state from history
+    BoardState lastState = history.back();
+    history.pop_back();
+
+    // 2. Restore all high-level state variables
+    this->enPassantTargetSquare = lastState.enPassantTargetSquare;
+    this->whiteKingsideCastle = lastState.whiteKingsideCastle;
+    this->whiteQueensideCastle = lastState.whiteQueensideCastle;
+    this->blackKingsideCastle = lastState.blackKingsideCastle;
+    this->blackQueensideCastle = lastState.blackQueensideCastle;
+
+    // 3. Get coordinates to reverse the move
+    std::pair<int, int> from = convertUciToCoords(move.substr(0, 2));
+    std::pair<int, int> to = convertUciToCoords(move.substr(2, 2));
+    int fromRow = from.first;
+    int fromCol = from.second;
+    int toRow = to.first;
+    int toCol = to.second;
+
+    Piece pieceThatMoved = getPieceAt(toRow, toCol);
+
+    // 4. Handle promotion first: the piece moving back is a pawn
+    if (move.length() == 5) {
+        pieceThatMoved = Piece(PieceType::PAWN, pieceThatMoved.getColor());
+    }
+
+    // 5. Move the piece back to its original square
+    setPieceAt(fromRow, fromCol, pieceThatMoved);
+
+    // 6. *** THE FIX ***: Determine if the move was an en passant capture
+    bool wasEnPassant = (pieceThatMoved.getType() == PieceType::PAWN &&
+                         fromCol != toCol &&
+                         lastState.capturedPiece.getType() != PieceType::EMPTY &&
+                         // The key condition: the destination square for the capture
+                         // matches the en passant target from the previous state.
+                         toRow == lastState.enPassantTargetSquare.first &&
+                         toCol == lastState.enPassantTargetSquare.second);
+
+    if (wasEnPassant) {
+        // For en passant, the destination square becomes empty.
+        setPieceAt(toRow, toCol, Piece(PieceType::EMPTY, PieceColor::NONE));
+        // The captured pawn is placed back on its original square.
+        setPieceAt(fromRow, toCol, lastState.capturedPiece);
+    } else {
+        // For all other moves (regular captures or quiet moves), restore the
+        // piece that was on the destination square.
+        setPieceAt(toRow, toCol, lastState.capturedPiece);
+    }
+
+    // 7. Undo castling (move the rook back)
+    if (pieceThatMoved.getType() == PieceType::KING && abs(fromCol - toCol) == 2) {
+        if (toCol == 7) { // Kingside
+            setPieceAt(fromRow, 8, getPieceAt(fromRow, 6));
+            setPieceAt(fromRow, 6, EMPTY_PIECE);
+        } else { // Queenside
+            setPieceAt(fromRow, 1, getPieceAt(fromRow, 4));
+            setPieceAt(fromRow, 4, EMPTY_PIECE);
+        }
+    }
+
+    // 8. Decrement the move count to fully restore the state
+    moveCount--;
 }
 
 void Board::initializeBoard() {
